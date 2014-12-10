@@ -1,0 +1,17 @@
+{
+  "name" : "Http",
+  "repositories" : [ {
+    "type" : "composer",
+    "url" : "https://packagist.org/"
+  } ],
+  "require": {
+  	"symfony/css-selector":			"~2.6",
+  	"symfony/dom-crawler":			"~2.6",
+  	"guzzlehttp/guzzle":			"~5.0"
+  },
+  "autoload": {
+  	"psr-4": {
+  		"Bramley\\Http\\": "src/"
+  	}
+  }
+}
