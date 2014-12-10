@@ -1,5 +1,5 @@
 {
-  "name" : "bramley-http",
+  "name" : "bramley/bramley-http",
   "require": {
   	"symfony/css-selector":			"~2.6",
   	"symfony/dom-crawler":			"~2.6",
