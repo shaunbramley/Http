@@ -1,9 +1,5 @@
 {
-  "name" : "Http",
-  "repositories" : [ {
-    "type" : "composer",
-    "url" : "https://packagist.org/"
-  } ],
+  "name" : "bramley-http",
   "require": {
   	"symfony/css-selector":			"~2.6",
   	"symfony/dom-crawler":			"~2.6",
