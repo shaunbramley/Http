@@ -1,13 +1,18 @@
 {
-  "name" : "bramley/bramley-http",
-  "require": {
-  	"symfony/css-selector":			"~2.6",
-  	"symfony/dom-crawler":			"~2.6",
-  	"guzzlehttp/guzzle":			"~5.0"
-  },
-  "autoload": {
-  	"psr-4": {
-  		"Bramley\\Http\\": "src/"
-  	}
-  }
+	"name" : "bramley/bramley-http",
+	"require": {
+		"symfony/css-selector":			"~2.6",
+		"symfony/dom-crawler":			"~2.6",
+		"guzzlehttp/guzzle":			"~5.0"
+	},
+	"require-dev": {
+		"ext-curl":						"*",
+		"psr/log":						"~1.0",
+		"phpunit/phpunit":				"~4.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"Bramley\\Http\\": "src/"
+		}
+	}
 }
