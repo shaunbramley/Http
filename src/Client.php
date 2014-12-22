@@ -73,7 +73,7 @@ class Client implements SubmitableInterface, ClientInterface
 
     public function createRequest($method, $url = null, array $options = [])
     {
-        $options['emitter'] = $this->getEmitter();
+        //$options['config']['emitter'] = $this->getEmitter();
         return $this->client->createRequest($method, $url, $options);
     }
 
@@ -91,6 +91,15 @@ class Client implements SubmitableInterface, ClientInterface
     {
         return $this->send($this->createRequest('OPTIONS', $url, $options));
     }
+    
+    public static function getDefaultUserAgent() {
+    	return GuzzleClient::getDefaultUserAgent();
+    }
+
+    public static function getDefaultHandler() {
+    	return GuzzleClient::getDefaultHandler();
+    }
+
 }
 
 ?>

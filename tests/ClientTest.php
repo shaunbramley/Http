@@ -1,7 +1,11 @@
 <?php
+/*
+ * 
+ */
 namespace Bramley\Http\Tests;
 
 use Bramley\Http\Client;
+use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Event\BeforeEvent;
 use GuzzleHttp\Event\ErrorEvent;
 use GuzzleHttp\Message\MessageFactory;
@@ -36,7 +40,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
     public function testUsesDefaultDefaultOptions()
     {
-        $client = new Client();
+        $client = new Client(new GuzzleClient());
         $this->assertTrue($client->getDefaultOption('allow_redirects'));
         $this->assertTrue($client->getDefaultOption('exceptions'));
         $this->assertTrue($client->getDefaultOption('verify'));
@@ -44,12 +48,13 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
     public function testUsesProvidedDefaultOptions()
     {
-        $client = new Client([
+        $guzzleclient = new GuzzleClient([
             'defaults' => [
                 'allow_redirects' => false,
                 'query' => ['foo' => 'bar']
             ]
         ]);
+        $client = new Client($guzzleclient);
         $this->assertFalse($client->getDefaultOption('allow_redirects'));
         $this->assertTrue($client->getDefaultOption('exceptions'));
         $this->assertTrue($client->getDefaultOption('verify'));
@@ -58,15 +63,15 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
     public function testCanSpecifyBaseUrl()
     {
-        $this->assertSame('', (new Client())->getBaseUrl());
-        $this->assertEquals('http://foo', (new Client([
+        $this->assertSame('', (new Client(new GuzzleClient()))->getBaseUrl());
+        $this->assertEquals('http://foo', (new Client(new GuzzleClient([
             'base_url' => 'http://foo'
-        ]))->getBaseUrl());
+        ])))->getBaseUrl());
     }
 
     public function testCanSpecifyBaseUrlUriTemplate()
     {
-        $client = new Client(['base_url' => ['http://foo.com/{var}/', ['var' => 'baz']]]);
+        $client = new Client(new GuzzleClient(['base_url' => ['http://foo.com/{var}/', ['var' => 'baz']]]));
         $this->assertEquals('http://foo.com/baz/', $client->getBaseUrl());
     }
 
@@ -76,9 +81,9 @@ class ClientTest extends \PHPUnit_Framework_TestCase
      */
     public function testCanSpecifyHandler()
     {
-        $client = new Client(['handler' => function () {
+        $client = new Client(new GuzzleClient(['handler' => function () {
                 throw new \Exception('Foo');
-            }]);
+            }]));
         $client->get('http://httpbin.org');
     }
 
@@ -88,9 +93,9 @@ class ClientTest extends \PHPUnit_Framework_TestCase
      */
     public function testCanSpecifyHandlerAsAdapter()
     {
-        $client = new Client(['adapter' => function () {
+        $client = new Client(new GuzzleClient(['adapter' => function () {
             throw new \Exception('Foo');
-        }]);
+        }]));
         $client->get('http://httpbin.org');
     }
 
@@ -106,7 +111,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
         $factory->expects($this->once())
             ->method('createRequest')
             ->will($this->throwException(new \Exception('Foo')));
-        $client = new Client(['message_factory' => $factory]);
+        $client = new Client(new GuzzleClient(['message_factory' => $factory]));
         $client->get();
     }
 
@@ -119,13 +124,13 @@ class ClientTest extends \PHPUnit_Framework_TestCase
             ->method('listeners')
             ->will($this->returnValue('foo'));
 
-        $client = new Client(['emitter' => $emitter]);
+        $client = new Client(new GuzzleClient(['emitter' => $emitter]));
         $this->assertEquals('foo', $client->getEmitter()->listeners());
     }
 
     public function testAddsDefaultUserAgentHeaderWithDefaultOptions()
     {
-        $client = new Client(['defaults' => ['allow_redirects' => false]]);
+        $client = new Client(new GuzzleClient(['defaults' => ['allow_redirects' => false]]));
         $this->assertFalse($client->getDefaultOption('allow_redirects'));
         $this->assertEquals(
             ['User-Agent' => Client::getDefaultUserAgent()],
@@ -135,7 +140,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
     public function testAddsDefaultUserAgentHeaderWithoutDefaultOptions()
     {
-        $client = new Client();
+        $client = new Client(new GuzzleClient());
         $this->assertEquals(
             ['User-Agent' => Client::getDefaultUserAgent()],
             $client->getDefaultOption('headers')
@@ -144,7 +149,11 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
     private function getRequestClient()
     {
-        $client = $this->getMockBuilder('GuzzleHttp\Client')
+        $client = $this->getMockBuilder('Bramley\Http\Client')
+        	->setConstructorArgs(
+        		[new GuzzleClient()]
+        	)
+        	//->disableOriginalConstructor()
             ->setMethods(['send'])
             ->getMock();
         $client->expects($this->once())
@@ -210,14 +219,14 @@ class ClientTest extends \PHPUnit_Framework_TestCase
                 }
             ));
 
-        $client = new Client([
+        $client = new Client(new GuzzleClient([
             'message_factory' => $f,
             'defaults' => [
                 'headers' => ['Foo' => 'Bar'],
                 'query' => ['baz' => 'bam'],
                 'exceptions' => false
             ]
-        ]);
+        ]));
 
         $request = $client->createRequest('GET', 'http://foo.com?a=b', [
             'headers' => ['Hi' => 'there', '1' => 'one'],
@@ -235,7 +244,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
     public function testClientMergesDefaultHeadersCaseInsensitively()
     {
-        $client = new Client(['defaults' => ['headers' => ['Foo' => 'Bar']]]);
+        $client = new Client(new GuzzleClient(['defaults' => ['headers' => ['Foo' => 'Bar']]]));
         $request = $client->createRequest('GET', 'http://foo.com?a=b', [
             'headers' => ['foo' => 'custom', 'user-agent' => 'test']
         ]);
@@ -245,9 +254,9 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
     public function testDoesNotOverwriteExistingUA()
     {
-        $client = new Client(['defaults' => [
+        $client = new Client(new GuzzleClient(['defaults' => [
             'headers' => ['User-Agent' => 'test']
-        ]]);
+        ]]));
         $this->assertEquals(
             ['User-Agent' => 'test'],
             $client->getDefaultOption('headers')
@@ -256,7 +265,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
     public function testUsesBaseUrlWhenNoUrlIsSet()
     {
-        $client = new Client(['base_url' => 'http://www.foo.com/baz?bam=bar']);
+        $client = new Client(new GuzzleClient(['base_url' => 'http://www.foo.com/baz?bam=bar']));
         $this->assertEquals(
             'http://www.foo.com/baz?bam=bar',
             $client->createRequest('GET')->getUrl()
@@ -265,7 +274,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
     public function testUsesBaseUrlCombinedWithProvidedUrl()
     {
-        $client = new Client(['base_url' => 'http://www.foo.com/baz?bam=bar']);
+        $client = new Client(new GuzzleClient(['base_url' => 'http://www.foo.com/baz?bam=bar']));
         $this->assertEquals(
             'http://www.foo.com/bar/bam',
             $client->createRequest('GET', 'bar/bam')->getUrl()
@@ -274,7 +283,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
     public function testUsesBaseUrlCombinedWithProvidedUrlViaUriTemplate()
     {
-        $client = new Client(['base_url' => 'http://www.foo.com/baz?bam=bar']);
+        $client = new Client(new GuzzleClient(['base_url' => 'http://www.foo.com/baz?bam=bar']));
         $this->assertEquals(
             'http://www.foo.com/bar/123',
             $client->createRequest('GET', ['bar/{bam}', ['bam' => '123']])->getUrl()
@@ -283,7 +292,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
     public function testSettingAbsoluteUrlOverridesBaseUrl()
     {
-        $client = new Client(['base_url' => 'http://www.foo.com/baz?bam=bar']);
+        $client = new Client(new GuzzleClient(['base_url' => 'http://www.foo.com/baz?bam=bar']));
         $this->assertEquals(
             'http://www.foo.com/foo',
             $client->createRequest('GET', '/foo')->getUrl()
@@ -292,7 +301,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
     public function testSettingAbsoluteUriTemplateOverridesBaseUrl()
     {
-        $client = new Client(['base_url' => 'http://www.foo.com/baz?bam=bar']);
+        $client = new Client(new GuzzleClient(['base_url' => 'http://www.foo.com/baz?bam=bar']));
         $this->assertEquals(
             'http://goo.com/1',
             $client->createRequest(
@@ -304,7 +313,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
     public function testCanSetRelativeUrlStartingWithHttp()
     {
-        $client = new Client(['base_url' => 'http://www.foo.com']);
+        $client = new Client(new GuzzleClient(['base_url' => 'http://www.foo.com']));
         $this->assertEquals(
             'http://www.foo.com/httpfoo',
             $client->createRequest('GET', 'httpfoo')->getUrl()
@@ -314,7 +323,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
     public function testClientSendsRequests()
     {
         $mock = new MockHandler(['status' => 200, 'headers' => []]);
-        $client = new Client(['handler' => $mock]);
+        $client = new Client(new GuzzleClient(['handler' => $mock]));
         $response = $client->get('http://test.com');
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertEquals('http://test.com', $response->getEffectiveUrl());
@@ -323,7 +332,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
     public function testSendingRequestCanBeIntercepted()
     {
         $response = new Response(200);
-        $client = new Client(['handler' => $this->ma]);
+        $client = new Client(new GuzzleClient(['handler' => $this->ma]));
         $client->getEmitter()->on(
             'before',
             function (BeforeEvent $e) use ($response) {
@@ -341,7 +350,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
     public function testEnsuresResponseIsPresentAfterSending()
     {
         $handler = function () {};
-        $client = new Client(['handler' => $handler]);
+        $client = new Client(new GuzzleClient(['handler' => $handler]));
         $client->get('http://httpbin.org');
     }
 
@@ -358,14 +367,14 @@ class ClientTest extends \PHPUnit_Framework_TestCase
                 function () {}
             );
         });
-        $client = new Client(['handler' => $handler]);
+        $client = new Client(new GuzzleClient(['handler' => $handler]));
         $response = $client->get('http://httpbin.org');
         $response->wait();
     }
 
     public function testClientHandlesErrorsDuringBeforeSend()
     {
-        $client = new Client();
+        $client = new Client(new GuzzleClient());
         $client->getEmitter()->on('before', function ($e) {
             throw new \Exception('foo');
         });
@@ -384,7 +393,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
      */
     public function testClientHandlesErrorsDuringBeforeSendAndThrowsIfUnhandled()
     {
-        $client = new Client();
+        $client = new Client(new GuzzleClient());
         $client->getEmitter()->on('before', function (BeforeEvent $e) {
             throw new RequestException('foo', $e->getRequest());
         });
@@ -397,7 +406,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
      */
     public function testClientWrapsExceptions()
     {
-        $client = new Client();
+        $client = new Client(new GuzzleClient());
         $client->getEmitter()->on('before', function (BeforeEvent $e) {
             throw new \Exception('foo');
         });
@@ -416,7 +425,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
             }
         );
         $mock = new MockHandler($future);
-        $client = new Client(['handler' => $mock]);
+        $client = new Client(new GuzzleClient(['handler' => $mock]));
         $called = 0;
         $response = $client->get('http://localhost:123/foo', [
             'future' => true,
@@ -446,7 +455,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
             }
         );
         $mock = new MockHandler($future);
-        $client = new Client(['handler' => $mock]);
+        $client = new Client(new GuzzleClient(['handler' => $mock]));
         $response = $client->get('http://localhost:123/foo', ['future' => true]);
         $this->assertFalse($called);
         $this->assertInstanceOf('GuzzleHttp\Message\FutureResponse', $response);
@@ -465,7 +474,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
                 $deferred->resolve(['error' => new \Exception('Noop!')]);
             }
         );
-        $client = new Client(['handler' => new MockHandler($future)]);
+        $client = new Client(new GuzzleClient(['handler' => new MockHandler($future)]));
         try {
             $res = $client->get('http://localhost:123/foo', ['future' => true]);
             $res->wait();
@@ -481,49 +490,25 @@ class ClientTest extends \PHPUnit_Framework_TestCase
      */
     public function testThrowsExceptionsSynchronously()
     {
-        $client = new Client([
+        $client = new Client(new GuzzleClient([
             'handler' => new MockHandler(['error' => new \Exception('Noo!')])
-        ]);
+        ]));
         $client->get('http://localhost:123/foo');
     }
 
     public function testCanSetDefaultValues()
     {
-        $client = new Client(['foo' => 'bar']);
+        $client = new Client(new GuzzleClient(['foo' => 'bar']));
         $client->setDefaultOption('headers/foo', 'bar');
         $this->assertNull($client->getDefaultOption('foo'));
         $this->assertEquals('bar', $client->getDefaultOption('headers/foo'));
     }
 
-    public function testSendsAllInParallel()
-    {
-        $client = new Client();
-        $client->getEmitter()->attach(new Mock([
-            new Response(200),
-            new Response(201),
-            new Response(202),
-        ]));
-        $history = new History();
-        $client->getEmitter()->attach($history);
 
-        $requests = [
-            $client->createRequest('GET', 'http://test.com'),
-            $client->createRequest('POST', 'http://test.com'),
-            $client->createRequest('PUT', 'http://test.com')
-        ];
-
-        $client->sendAll($requests);
-        $requests = array_map(function($r) {
-            return $r->getMethod();
-        }, $history->getRequests());
-        $this->assertContains('GET', $requests);
-        $this->assertContains('POST', $requests);
-        $this->assertContains('PUT', $requests);
-    }
 
     public function testCanDisableAuthPerRequest()
     {
-        $client = new Client(['defaults' => ['auth' => 'foo']]);
+        $client = new Client(new GuzzleClient(['defaults' => ['auth' => 'foo']]));
         $request = $client->createRequest('GET', 'http://test.com');
         $this->assertEquals('foo', $request->getConfig()['auth']);
         $request = $client->createRequest('GET', 'http://test.com', ['auth' => null]);
@@ -535,18 +520,18 @@ class ClientTest extends \PHPUnit_Framework_TestCase
         $http = getenv('HTTP_PROXY');
         $https = getenv('HTTPS_PROXY');
 
-        $client = new Client();
+        $client = new Client(new GuzzleClient());
         $this->assertNull($client->getDefaultOption('proxy'));
 
         putenv('HTTP_PROXY=127.0.0.1');
-        $client = new Client();
+        $client = new Client(new GuzzleClient());
         $this->assertEquals(
             ['http' => '127.0.0.1'],
             $client->getDefaultOption('proxy')
         );
 
         putenv('HTTPS_PROXY=127.0.0.2');
-        $client = new Client();
+        $client = new Client(new GuzzleClient());
         $this->assertEquals(
             ['http' => '127.0.0.1', 'https' => '127.0.0.2'],
             $client->getDefaultOption('proxy')
@@ -558,7 +543,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
     public function testReturnsFutureForErrorWhenRequested()
     {
-        $client = new Client(['handler' => new MockHandler(['status' => 404])]);
+        $client = new Client(new GuzzleClient(['handler' => new MockHandler(['status' => 404])]));
         $request = $client->createRequest('GET', 'http://localhost:123/foo', [
             'future' => true
         ]);
@@ -574,7 +559,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
     public function testReturnsFutureForResponseWhenRequested()
     {
-        $client = new Client(['handler' => new MockHandler(['status' => 200])]);
+        $client = new Client(new GuzzleClient(['handler' => new MockHandler(['status' => 200])]));
         $request = $client->createRequest('GET', 'http://localhost:123/foo', [
             'future' => true
         ]);

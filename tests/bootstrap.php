@@ -1,11 +1,10 @@
 <?php
 require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/../vendor/guzzlehttp/ringphp/tests/Client/Server.php';
-echo __DIR__ . '/../vendor/autoload.php';
-use GuzzleHttp\Tests\Server;
+require __DIR__ . '/../vendor/guzzlehttp/guzzle/tests/Server.php';
 
-Server::start();
+GuzzleHttp\Tests\Server::start();
 
 register_shutdown_function(function () {
-    Server::stop();
+    GuzzleHttp\Tests\Server::stop();
 });

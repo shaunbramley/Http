@@ -14,5 +14,10 @@
 		"psr-4": {
 			"Bramley\\Http\\": "src/"
 		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"Bramley\\Http\\Tests\\": "tests/"
+		}
 	}
 }
