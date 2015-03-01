@@ -24,7 +24,6 @@ class Client implements SubmitableInterface, ClientInterface
 	 */
 	public function __construct(GuzzleClient $client) {
         $this->client = $client;
-        $this->client->setDefaultOption('headers/User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:33.0) Gecko/20100101 Firefox/33.0');
 	}
 
 	/**
